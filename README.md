@@ -18,7 +18,7 @@ This iOS app is a simple note-taking application that allows users to add, edit,
 1. Clone this repository to your local machine:
 
     ```bash
-    git clone https://github.com/username/NoteApp.git
+    git clone https://github.com/halilxibrahim/NoteApp-swift
     ```
 
 2. Open the project in Xcode.
