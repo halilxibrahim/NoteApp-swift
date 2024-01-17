@@ -1,77 +1,128 @@
 import SwiftUI
 
 struct ContentView: View {
-    
-    @State var notMetni: String = ""
-    @State var notlar: [String] = []
-    
+    @State private var notMetni: String = ""
+    @State private var notlar: [Not] = []
+
     var body: some View {
         NavigationView {
             VStack {
-                Text("Not Uygulaması") // Yeni satır eklendi
-                
-                // Not oluşturma alanı
+                Text("Not Uygulaması")
+                    .font(.largeTitle)
+                    .foregroundColor(.blue)
+                    .padding()
+
                 TextField("Not Metni", text: $notMetni)
                     .padding()
-                
-                // Not ekleme düğmesi
+
                 Button(action: {
-                    self.notlar.append(self.notMetni)
+                    self.notlar.append(Not(metin: self.notMetni, renk: randomRenk()))
                     self.notMetni = ""
                 }) {
                     Text("Not Ekle")
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
                 .padding()
-                
-                // Notlar listesi
+
                 List {
-                    ForEach(0..<notlar.count, id: \.self) { index in
-                        NavigationLink(destination: NotDetay(notMetni: self.$notlar[index])) {
-                            Text(self.notlar[index])
+                    ForEach(notlar) { not in
+                        NavigationLink(destination: NotDetay(not: not, notlar: $notlar)) {
+                            NotSatiri(not: not)
                         }
                     }
                     .onDelete(perform: silNot)
                 }
             }
-            .navigationBarTitle("Yeni Teknolojiler Ödevi")
+            .navigationBarTitle("", displayMode: .inline)
+            .navigationBarHidden(true)
         }
     }
-    
-    // Not silme işlevi
+
     func silNot(at offsets: IndexSet) {
         notlar.remove(atOffsets: offsets)
     }
+
+    func randomRenk() -> Color {
+        let renkler: [Color] = [.red, .blue, .green, .orange, .pink, .purple, .yellow]
+        return renkler.randomElement() ?? .gray
+    }
 }
 
-// Not detay sayfası
+struct NotSatiri: View {
+    var not: Not
+
+    var body: some View {
+        HStack {
+            Text(not.metin)
+                .foregroundColor(.black)
+            Spacer()
+            RoundedRectangle(cornerRadius: 8)
+                .foregroundColor(not.renk)
+                .frame(width: 20, height: 20)
+        }
+        .padding()
+    }
+}
+
 struct NotDetay: View {
-    
-    @Binding var notMetni: String
-    @State private var notSilmeOnaylandi = false
-    
-    @Environment(\.presentationMode) var presentationMode
-    
+    @ObservedObject var not: Not
+    @Binding var notlar: [Not]
+
+    @State private var duzenleModu = false
+    @State private var yeniNotMetni: String = ""
+
     var body: some View {
         VStack {
-            TextEditor(text: $notMetni)
-                .navigationBarTitle("Not Düzenle")
-            
+            if duzenleModu {
+                TextField("Notu Düzenle", text: $yeniNotMetni)
+                    .padding()
+
+                Button("Kaydet") {
+                    if let index = notlar.firstIndex(where: { $0.id == not.id }) {
+                        notlar[index].metin = yeniNotMetni
+                        duzenleModu.toggle()
+                    }
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            } else {
+                Text(not.metin)
+                    .padding()
+
+                Button("Düzenle") {
+                    yeniNotMetni = not.metin
+                    duzenleModu.toggle()
+                }
+                .padding()
+                .background(Color.orange)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+
             Button("Notu Sil") {
-                notSilmeOnaylandi = true
+                notlar.removeAll { $0.id == not.id }
             }
-            .alert(isPresented: $notSilmeOnaylandi) {
-                Alert(
-                    title: Text("Notu Sil"),
-                    message: Text("Bu notu silmek istediğinize emin misiniz?"),
-                    primaryButton: .destructive(Text("Sil")) {
-                        // Notu sil
-                        notMetni = ""
-                        // Geri git
-                        presentationMode.wrappedValue.dismiss()
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
+            .padding()
+            .background(Color.red)
+            .foregroundColor(.white)
+            .cornerRadius(10)
         }
+        .padding()
+    }
+}
+
+class Not: Identifiable, ObservableObject {
+    var id = UUID()
+    var metin: String
+    var renk: Color
+
+    init(metin: String, renk: Color) {
+        self.metin = metin
+        self.renk = renk
     }
 }
